@@ -827,7 +827,7 @@ const API_BASE =
   (typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
     ? 'http://localhost:8000'
-    : 'https://forma-murex.vercel.app';
+    : 'https://forma-dtzd.onrender.com';
 let _currentJobId = null;
 let _etaInterval = null;
 let _chatHistory = [];
