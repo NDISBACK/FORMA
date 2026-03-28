@@ -1226,6 +1226,14 @@ function populateReport(idea, data) {
 
 /* --- Sentiment panel --- */
 
+function sentimentLabelToScore(label) {
+  const v = (label || 'neutral').toLowerCase();
+  if (v === 'positive') return 0.78;
+  if (v === 'negative') return 0.24;
+  if (v === 'unknown') return null;
+  return 0.52;
+}
+
 function renderSentimentPanel(sent) {
   if (!sent || !Object.keys(sent).length) {
     const panel = document.getElementById('sentiment-panel');
@@ -1238,14 +1246,34 @@ function renderSentimentPanel(sent) {
 
   setText('sentiment-summary', sent.summary);
 
-  const score = sent.overall_sentiment_score ?? 0.5;
-  const pct = Math.round(score * 100);
+  let score = sent.overall_sentiment_score;
+  if (score != null && score !== '') {
+    score = Number(score);
+    if (Number.isNaN(score)) score = null;
+    else if (score > 1) score = score / 100;
+  } else {
+    score = null;
+  }
+  if (score == null) {
+    const r = sentimentLabelToScore(sent.reddit_sentiment);
+    const t = sentimentLabelToScore(sent.twitter_sentiment);
+    const parts = [r, t].filter((x) => x !== null);
+    if (parts.length) score = parts.reduce((a, b) => a + b, 0) / parts.length;
+  }
+
   const gaugeFill = document.getElementById('sentiment-gauge-fill');
   const gaugeVal  = document.getElementById('sentiment-gauge-val');
-  if (gaugeFill) gaugeFill.style.width = pct + '%';
-  if (gaugeVal) {
-    gaugeVal.textContent = pct + '/100';
-    gaugeVal.style.color = score > 0.6 ? '#4ade80' : score > 0.4 ? '#fbbf24' : '#f87171';
+  if (gaugeFill && gaugeVal) {
+    if (score == null) {
+      gaugeFill.style.width = '0%';
+      gaugeVal.textContent = 'N/A';
+      gaugeVal.style.color = 'var(--muted)';
+    } else {
+      const pct = Math.round(score * 100);
+      gaugeFill.style.width = pct + '%';
+      gaugeVal.textContent = pct + '/100';
+      gaugeVal.style.color = score > 0.62 ? '#4ade80' : score > 0.38 ? '#fbbf24' : '#f87171';
+    }
   }
 
   function sentBadge(id, val) {

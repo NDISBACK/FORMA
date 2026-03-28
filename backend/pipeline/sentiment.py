@@ -24,7 +24,60 @@ fences) with this exact structure:
   ],
   "summary": "2-3 sentence summary of overall public perception"
 }
+
+IMPORTANT: overall_sentiment_score must reflect the posts — use the full 0.0–1.0 range
+(do not default to 0.5 unless sentiment is genuinely mixed). Align it with the
+reddit/twitter labels you output.
 """
+
+
+def _normalize_sentiment_payload(d: dict[str, Any]) -> dict[str, Any]:
+    """Blend model score with platform labels so the score is not stuck at 0.5."""
+
+    def lab_to_f(lab: str | None) -> float | None:
+        if not lab:
+            return None
+        x = str(lab).lower().strip()
+        if x == "positive":
+            return 0.78
+        if x == "negative":
+            return 0.24
+        if x == "unknown":
+            return None
+        return 0.52  # neutral
+
+    r = lab_to_f(d.get("reddit_sentiment"))
+    t = lab_to_f(d.get("twitter_sentiment"))
+    parts = [x for x in (r, t) if x is not None]
+    label_blend = sum(parts) / len(parts) if parts else None
+
+    raw = d.get("overall_sentiment_score")
+    if isinstance(raw, str):
+        raw = raw.strip().rstrip("%")
+        try:
+            raw = float(raw)
+        except ValueError:
+            raw = None
+    if raw is not None and raw > 1.0:
+        raw = raw / 100.0
+
+    if raw is None and label_blend is not None:
+        d["overall_sentiment_score"] = round(label_blend, 3)
+    elif raw is not None and label_blend is not None:
+        # Model often returns 0.5 — pull toward label consensus
+        blended = 0.42 * float(raw) + 0.58 * label_blend
+        if abs(float(raw) - 0.5) < 0.04:
+            d["overall_sentiment_score"] = round(0.35 * float(raw) + 0.65 * label_blend, 3)
+        else:
+            d["overall_sentiment_score"] = round(blended, 3)
+    elif raw is not None:
+        d["overall_sentiment_score"] = round(float(raw), 3)
+    elif label_blend is not None:
+        d["overall_sentiment_score"] = round(label_blend, 3)
+    else:
+        d["overall_sentiment_score"] = None
+
+    return d
 
 
 def analyze_sentiment(
@@ -61,4 +114,5 @@ def analyze_sentiment(
             {"role": "user", "content": user_msg},
         ],
     )
-    return json.loads(response.choices[0].message.content)
+    data = json.loads(response.choices[0].message.content)
+    return _normalize_sentiment_payload(data)
