@@ -823,7 +823,11 @@ const MAX_DPR = 1.5;
    9. ANALYSIS UI — FastAPI Backend Integration
    ================================================================ */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE =
+  (typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    ? 'http://localhost:8000'
+    : 'https://forma-murex.vercel.app';
 let _currentJobId = null;
 let _etaInterval = null;
 let _chatHistory = [];
