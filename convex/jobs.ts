@@ -87,3 +87,45 @@ export const getAnalysis = query({
       .first();
   },
 });
+
+export const getFreshScrapeCache = query({
+  args: { cache_key: v.string() },
+  handler: async (ctx, { cache_key }) => {
+    const matches = await ctx.db
+      .query("scrapeCache")
+      .withIndex("by_cache_key", (q) => q.eq("cache_key", cache_key))
+      .collect();
+    const now = Date.now();
+    const fresh = matches
+      .filter((item) => item.expires_at > now)
+      .sort((a, b) => b.created_at - a.created_at)[0];
+    return fresh ?? null;
+  },
+});
+
+export const putScrapeCache = mutation({
+  args: {
+    cache_key: v.string(),
+    kind: v.string(),
+    payload: v.string(),
+    expires_at: v.number(),
+  },
+  handler: async (ctx, { cache_key, kind, payload, expires_at }) => {
+    const existing = await ctx.db
+      .query("scrapeCache")
+      .withIndex("by_cache_key", (q) => q.eq("cache_key", cache_key))
+      .collect();
+
+    for (const item of existing) {
+      await ctx.db.delete(item._id);
+    }
+
+    return await ctx.db.insert("scrapeCache", {
+      cache_key,
+      kind,
+      payload,
+      expires_at,
+      created_at: Date.now(),
+    });
+  },
+});

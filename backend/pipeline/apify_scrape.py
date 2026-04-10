@@ -5,8 +5,11 @@ from typing import Any
 from apify_client import ApifyClient
 
 from backend.config import APIFY_API_KEY
+from backend.convex_client import get_scrape_cache, set_scrape_cache
+from backend.pipeline.community_signals import dedupe_community_signals, normalize_query
 
 _client: ApifyClient | None = None
+_CACHE_TTL_SECONDS = 60 * 60 * 6
 
 
 def _get_client() -> ApifyClient:
@@ -18,11 +21,44 @@ def _get_client() -> ApifyClient:
     return _client
 
 
+def _cache_key(kind: str, query: str, limit: int) -> str:
+    return f"{kind}:{normalize_query(query)}:{limit}"
+
+
+def _dedupe_records(
+    records: list[dict[str, Any]],
+    projector,
+) -> list[dict[str, Any]]:
+    deduped_meta = dedupe_community_signals([projector(record) for record in records])
+    by_url = {str(record.get("url") or ""): record for record in records if record.get("url")}
+    by_fallback = {
+        f"{record.get('title', '')}|{record.get('text', '')}|{record.get('body', '')}": record
+        for record in records
+    }
+
+    deduped: list[dict[str, Any]] = []
+    for item in deduped_meta:
+        url = str(item.get("url") or "")
+        if url and url in by_url:
+            deduped.append(by_url[url])
+            continue
+        fallback_key = f"{item.get('title', '')}|{item.get('text', '')}|{item.get('body', '')}"
+        if fallback_key in by_fallback:
+            deduped.append(by_fallback[fallback_key])
+    return deduped
+
+
 def scrape_reddit(query: str, *, max_posts: int = 20) -> list[dict[str, Any]]:
     """Search Reddit for posts/comments related to *query*."""
+    cache_key = _cache_key("reddit", query, max_posts)
+    cached = get_scrape_cache(cache_key)
+    if cached:
+        return cached
+
     client = _get_client()
+    search_query = normalize_query(query)
     run_input = {
-        "searches": [query],
+        "searches": [search_query],
         "maxPostCount": max_posts,
         "maxComments": 0,
         "proxy": {"useApifyProxy": True},
@@ -42,14 +78,37 @@ def scrape_reddit(query: str, *, max_posts: int = 20) -> list[dict[str, Any]]:
             "subreddit": item.get("subreddit", ""),
             "created_at": item.get("createdAt"),
         })
-    return normalized
+    deduped = _dedupe_records(
+        normalized,
+        lambda entry: {
+            "source": "reddit",
+            "title": entry.get("title"),
+            "text": entry.get("body"),
+            "body": entry.get("body"),
+            "url": entry.get("url"),
+        },
+    )
+
+    set_scrape_cache(
+        cache_key,
+        kind="reddit",
+        payload=deduped,
+        ttl_seconds=_CACHE_TTL_SECONDS,
+    )
+    return deduped
 
 
 def scrape_twitter(query: str, *, max_tweets: int = 30) -> list[dict[str, Any]]:
     """Search Twitter/X for tweets related to *query*."""
+    cache_key = _cache_key("twitter", query, max_tweets)
+    cached = get_scrape_cache(cache_key)
+    if cached:
+        return cached
+
     client = _get_client()
+    search_query = normalize_query(query)
     run_input = {
-        "searchTerms": [query],
+        "searchTerms": [search_query],
         "maxTweets": max_tweets,
         "addUserInfo": True,
         "scrapeTweetReplies": False,
@@ -68,4 +127,19 @@ def scrape_twitter(query: str, *, max_tweets: int = 30) -> list[dict[str, Any]]:
             "author": item.get("user", {}).get("name", ""),
             "created_at": item.get("created_at"),
         })
-    return normalized
+    deduped = _dedupe_records(
+        normalized,
+        lambda entry: {
+            "source": "twitter",
+            "text": entry.get("text"),
+            "url": entry.get("url"),
+        },
+    )
+
+    set_scrape_cache(
+        cache_key,
+        kind="twitter",
+        payload=deduped,
+        ttl_seconds=_CACHE_TTL_SECONDS,
+    )
+    return deduped

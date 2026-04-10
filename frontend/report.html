@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forma Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="index.css" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body class="report-page">
+  <canvas id="dot-canvas"></canvas>
+  <canvas id="report-aurora-canvas"></canvas>
+
+  <nav class="nav report-nav">
+    <div class="nav-logo">
+      <svg width="28" height="28" viewBox="0 0 20 20">
+        <rect width="20" height="20" rx="3" fill="#0e0e0c"/>
+        <rect x="3" y="3" width="14" height="14" rx="2" fill="#f2f0eb"/>
+        <rect x="7" y="7" width="8" height="8" rx="1.5" fill="#0e0e0c"/>
+      </svg>
+      <span class="nav-wordmark">FORMA</span>
+    </div>
+    <div class="report-nav-actions">
+      <a href="index.html#analyse" class="btn-ghost report-back-btn">← New idea</a>
+    </div>
+  </nav>
+
+  <main class="report-page-main">
+    <section class="report-loading visible" id="report-loading">
+      <p class="eyebrow">Generating report</p>
+      <h1 class="report-loading-title" id="loading-idea-title">Analysing your idea</h1>
+      <p class="report-loading-sub" id="status-msg">Running multi-source research and synthesis.</p>
+
+      <div class="progress-ring-wrap">
+        <svg class="progress-ring" width="164" height="164" viewBox="0 0 164 164" aria-hidden="true">
+          <circle class="progress-ring-track" cx="82" cy="82" r="68"></circle>
+          <circle class="progress-ring-fill" id="ring-fill" cx="82" cy="82" r="68"></circle>
+        </svg>
+        <div class="progress-ring-center">
+          <span id="progress-pct">0%</span>
+          <small id="progress-eta">estimating…</small>
+          <small id="progress-elapsed">0s elapsed</small>
+        </div>
+      </div>
+
+      <div class="status-bar visible report-status-bar" id="status-bar">
+        <div class="analysis-progress">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+          </div>
+        </div>
+        <div class="steps report-steps">
+          <div class="step" id="step-1">Searching web</div>
+          <div class="step" id="step-2">Scraping Reddit</div>
+          <div class="step" id="step-3">AI analysis</div>
+          <div class="step" id="step-4">Report ready</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="report-shell" id="report-shell">
+      <div class="report-shell-top">
+        <div class="report-tabs">
+          <a href="#overview">Overview</a>
+          <a href="#swot-section">SWOT</a>
+          <a href="#competitors-section">Competitors</a>
+          <a href="#vc-section">VC</a>
+          <a href="#sentiment-section">Sentiment</a>
+          <a href="#revenue-section">Revenue</a>
+          <a href="#insights-section">Insights</a>
+        </div>
+      </div>
+
+      <section class="report-hero-band" id="overview">
+        <div class="score-row">
+          <div class="score-circle">
+            <span id="score-num">8</span><span class="score-denom">/10</span>
+          </div>
+          <div>
+            <h2 id="report-title">Your idea</h2>
+            <span class="verdict-badge" id="verdict-badge">promising</span>
+          </div>
+        </div>
+        <div class="info-box report-hero-summary">
+          <p class="box-label">Executive summary</p>
+          <p id="exec-summary">—</p>
+        </div>
+      </section>
+
+      <section class="report bento-report visible" id="report">
+        <div class="report-bento-grid">
+          <div class="bento-col bento-col-wide">
+            <div class="radar-card" id="radar-card">
+              <p class="box-label">Idea scorecard</p>
+              <canvas id="radar-canvas" width="340" height="300"></canvas>
+              <div class="radar-legend" id="radar-legend"></div>
+            </div>
+
+            <div class="two-col">
+              <div class="info-box"><p class="box-label">Market size</p><p id="market-summary">—</p></div>
+              <div class="info-box"><p class="box-label">Target audience</p><p id="target-audience">—</p></div>
+            </div>
+
+            <div class="two-col">
+              <div class="info-box"><p class="box-label">Biggest opportunity</p><p id="opportunity">—</p></div>
+              <div class="info-box"><p class="box-label">Biggest risk</p><p id="risk">—</p></div>
+            </div>
+
+            <div class="swot-grid" id="swot-section">
+              <div class="swot-box swot-s"><p class="box-label">Strengths</p><ul id="swot-strengths"></ul></div>
+              <div class="swot-box swot-w"><p class="box-label">Weaknesses</p><ul id="swot-weaknesses"></ul></div>
+              <div class="swot-box swot-o"><p class="box-label">Opportunities</p><ul id="swot-opportunities"></ul></div>
+              <div class="swot-box swot-t"><p class="box-label">Threats</p><ul id="swot-threats"></ul></div>
+            </div>
+
+            <div class="competitors-card" id="competitors-section">
+              <p class="box-label">Top competitors</p>
+              <div class="badge-row" id="comp-list"></div>
+            </div>
+
+            <div class="info-box" id="competitor-deepdive-section">
+              <p class="box-label">Competitor failure deep-dive (Top 3)</p>
+              <div id="competitor-deepdive-list"></div>
+            </div>
+
+            <div class="info-box" id="failure-section">
+              <p class="box-label">Failure case studies</p>
+              <div id="failure-list"></div>
+            </div>
+          </div>
+
+          <div class="bento-col bento-col-mid">
+            <div class="vc-panel" id="vc-section">
+              <p class="box-label">Would I fund this?</p>
+              <div class="vc-head">
+                <div class="vc-score-wrap">
+                  <div class="vc-score-track">
+                    <div class="vc-score-fill" id="vc-score-fill"></div>
+                  </div>
+                  <div class="vc-score-val" id="vc-score-val">—</div>
+                </div>
+                <div class="vc-decision-wrap">
+                  <span class="vc-decision-badge" id="vc-decision-badge">maybe</span>
+                  <p class="vc-overall" id="vc-overall-rationale">—</p>
+                </div>
+              </div>
+              <div class="vc-subscores" id="vc-subscores"></div>
+              <div class="vc-blockers" id="vc-blockers"></div>
+            </div>
+
+            <div class="improve-panel" id="improve-panel">
+              <p class="box-label">How to improve this idea (prioritized)</p>
+              <div class="improve-list" id="improve-list"></div>
+            </div>
+
+            <div class="sentiment-panel" id="sentiment-section">
+              <p class="box-label">Public sentiment</p>
+              <p class="sentiment-summary" id="sentiment-summary">—</p>
+              <div class="sentiment-gauge-row">
+                <div class="sentiment-gauge">
+                  <div class="gauge-label">Overall score</div>
+                  <div class="gauge-track">
+                    <div class="gauge-fill" id="sentiment-gauge-fill"></div>
+                  </div>
+                  <div class="gauge-value" id="sentiment-gauge-val">—</div>
+                </div>
+                <div class="platform-bars">
+                  <div class="platform-bar">
+                    <span class="platform-icon">Reddit</span>
+                    <span class="platform-badge" id="reddit-sentiment">—</span>
+                  </div>
+                  <div class="platform-bar">
+                    <span class="platform-icon">Twitter</span>
+                    <span class="platform-badge" id="twitter-sentiment">—</span>
+                  </div>
+                </div>
+              </div>
+              <div class="source-coverage" id="source-coverage"></div>
+              <div class="two-col" style="margin-top:14px">
+                <div class="sentiment-list-box sentiment-positives">
+                  <p class="sent-list-label">Key positives</p>
+                  <ul id="sent-positives"></ul>
+                </div>
+                <div class="sentiment-list-box sentiment-concerns">
+                  <p class="sent-list-label">Key concerns</p>
+                  <ul id="sent-concerns"></ul>
+                </div>
+              </div>
+              <div class="notable-comments" id="notable-comments"></div>
+            </div>
+
+            <div class="info-box" id="investor-section">
+              <p class="box-label">Investor intelligence</p>
+              <p id="funding-landscape">—</p>
+              <div id="investor-list" class="investor-list"></div>
+            </div>
+          </div>
+
+          <div class="bento-col bento-col-sidebar">
+            <div class="flowchart-panel" id="flowchart-panel">
+              <div class="flowchart-header">
+                <span class="flowchart-dot"></span>
+                <p class="box-label" style="margin-bottom:0">Business model</p>
+                <button class="fc-expand-btn" id="fc-expand-btn" title="Expand flowchart">&#x2922; Expand</button>
+              </div>
+              <div class="flowchart-container" id="flowchart-container">
+                <p class="flowchart-placeholder">Flowchart will appear here after analysis.</p>
+              </div>
+            </div>
+
+            <div class="two-col" id="revenue-section">
+              <div class="info-box"><p class="box-label">Revenue model</p><p id="revenue-model">—</p></div>
+              <div class="info-box"><p class="box-label">Go-to-market</p><p id="go-to-market">—</p></div>
+            </div>
+
+            <div class="rev-sim-panel" id="rev-sim-panel">
+              <p class="box-label">Revenue simulation</p>
+              <p class="rev-sim-sub" id="rev-sim-rationale">Tweak the sliders to explore different scenarios.</p>
+              <div class="rev-sliders">
+                <div class="slider-group">
+                  <label class="slider-label">Monthly price <span id="slider-price-val">$10</span></label>
+                  <input type="range" id="slider-price" min="1" max="500" step="1" value="10">
+                </div>
+                <div class="slider-group">
+                  <label class="slider-label">Initial users <span id="slider-users-val">100</span></label>
+                  <input type="range" id="slider-users" min="10" max="10000" step="10" value="100">
+                </div>
+                <div class="slider-group">
+                  <label class="slider-label">Monthly growth <span id="slider-growth-val">10%</span></label>
+                  <input type="range" id="slider-growth" min="1" max="50" step="1" value="10">
+                </div>
+                <div class="slider-group">
+                  <label class="slider-label">Monthly churn <span id="slider-churn-val">5%</span></label>
+                  <input type="range" id="slider-churn" min="1" max="30" step="1" value="5">
+                </div>
+              </div>
+              <div class="scenario-cards">
+                <div class="scenario-card scenario-pessimistic">
+                  <p class="scenario-label">Pessimistic</p>
+                  <p class="scenario-metric"><span class="scenario-val" id="pess-mrr">—</span><span class="scenario-unit">MRR</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="pess-users">—</span><span class="scenario-unit">users</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="pess-bep">—</span><span class="scenario-unit">break-even</span></p>
+                </div>
+                <div class="scenario-card scenario-base">
+                  <p class="scenario-label">Base</p>
+                  <p class="scenario-metric"><span class="scenario-val" id="base-mrr">—</span><span class="scenario-unit">MRR</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="base-users">—</span><span class="scenario-unit">users</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="base-bep">—</span><span class="scenario-unit">break-even</span></p>
+                </div>
+                <div class="scenario-card scenario-optimistic">
+                  <p class="scenario-label">Optimistic</p>
+                  <p class="scenario-metric"><span class="scenario-val" id="opti-mrr">—</span><span class="scenario-unit">MRR</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="opti-users">—</span><span class="scenario-unit">users</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="opti-bep">—</span><span class="scenario-unit">break-even</span></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-box" id="insights-section">
+              <p class="box-label">Recommendations</p>
+              <ul id="recommendations" class="reco-list"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-actions report-page-actions">
+          <button class="reset-btn" onclick="exportPDF()">Download PDF</button>
+          <button class="reset-btn" onclick="resetToHome()">Analyse another idea</button>
+        </div>
+
+        <section class="report-chat-section" id="report-chat-section">
+          <p class="eyebrow">Ask the AI</p>
+          <h2 class="section-title" style="font-size:1.4rem;margin-bottom:18px">Have questions about this idea?</h2>
+          <div class="report-chat-history" id="chat-messages">
+            <div class="chat-bubble assistant">Ask me anything about this idea — pricing strategy, distribution channels, risks, pivots...</div>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <div class="report-chat-dock" id="chat-panel">
+    <div class="chat-dock-inner">
+      <span class="chat-dock-label">Ask the AI</span>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="e.g. How do I get my first 100 users?" autocomplete="off">
+        <button id="chat-send" onclick="sendChat()">Ask &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-modal" id="fc-modal" aria-hidden="true">
+    <div class="fc-modal-backdrop" id="fc-modal-backdrop"></div>
+    <div class="fc-modal-box">
+      <div class="fc-modal-header">
+        <span class="flowchart-dot"></span>
+        <span class="fc-modal-title">Business model</span>
+        <div class="fc-modal-controls">
+          <button class="fc-zoom-btn" id="fc-zoom-in" title="Zoom in">&#xFF0B;</button>
+          <button class="fc-zoom-btn" id="fc-zoom-out" title="Zoom out">&#xFF0D;</button>
+          <button class="fc-zoom-btn" id="fc-zoom-reset" title="Reset zoom">&#x27F3;</button>
+          <button class="fc-close-btn" id="fc-close-btn" title="Close">&#x2715;</button>
+        </div>
+      </div>
+      <div class="fc-modal-content" id="fc-modal-content"></div>
+    </div>
+  </div>
+
+  <script src="report.js"></script>
+</body>
+</html>

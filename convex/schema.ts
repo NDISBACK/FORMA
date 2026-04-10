@@ -21,4 +21,12 @@ export default defineSchema({
     result: v.string(),
     created_at: v.number(),
   }).index("by_job_id", ["job_id"]),
+
+  scrapeCache: defineTable({
+    cache_key: v.string(),
+    kind: v.string(),
+    payload: v.string(),
+    expires_at: v.number(),
+    created_at: v.number(),
+  }).index("by_cache_key", ["cache_key"]),
 });

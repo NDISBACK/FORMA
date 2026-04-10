@@ -6,7 +6,7 @@
   <title>Forma — Research before you build</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="index.css" />
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -184,6 +184,33 @@
             </div>
 
             <div class="competitors-card"><p class="box-label">Top competitors</p><div class="badge-row" id="comp-list"></div></div>
+            <div class="info-box" id="competitor-deepdive-section">
+              <p class="box-label">Competitor failure deep-dive (Top 3)</p>
+              <div id="competitor-deepdive-list"></div>
+            </div>
+
+            <div class="vc-panel" id="vc-panel">
+              <p class="box-label">Would I fund this?</p>
+              <div class="vc-head">
+                <div class="vc-score-wrap">
+                  <div class="vc-score-track">
+                    <div class="vc-score-fill" id="vc-score-fill"></div>
+                  </div>
+                  <div class="vc-score-val" id="vc-score-val">—</div>
+                </div>
+                <div class="vc-decision-wrap">
+                  <span class="vc-decision-badge" id="vc-decision-badge">maybe</span>
+                  <p class="vc-overall" id="vc-overall-rationale">—</p>
+                </div>
+              </div>
+              <div class="vc-subscores" id="vc-subscores"></div>
+              <div class="vc-blockers" id="vc-blockers"></div>
+            </div>
+
+            <div class="improve-panel" id="improve-panel">
+              <p class="box-label">How to improve this idea (prioritized)</p>
+              <div class="improve-list" id="improve-list"></div>
+            </div>
 
             <div class="sentiment-panel" id="sentiment-panel">
               <p class="box-label">Public sentiment</p>
@@ -207,6 +234,7 @@
                   </div>
                 </div>
               </div>
+              <div class="source-coverage" id="source-coverage"></div>
               <div class="two-col" style="margin-top:14px">
                 <div class="sentiment-list-box sentiment-positives">
                   <p class="sent-list-label">Key positives</p>

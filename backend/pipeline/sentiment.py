@@ -1,15 +1,23 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from typing import Any
 
 from openai import OpenAI
 
 from backend.config import OPENAI_API_KEY
+from backend.pipeline.community_signals import (
+    dedupe_community_signals,
+    short_text,
+    source_label,
+    summarize_source_coverage,
+)
 
 _SYSTEM_PROMPT = """\
-You are a sentiment analysis expert. You will receive social media posts and \
-comments about a business idea collected from Reddit and Twitter/X.
+You are a sentiment analysis expert. You will receive public community signals \
+about a business idea collected from Reddit, Twitter/X, and other discussion \
+sources such as Hacker News, Product Hunt, and GitHub.
 
 Analyze the overall public sentiment and return ONLY valid JSON (no markdown \
 fences) with this exact structure:
@@ -20,18 +28,24 @@ fences) with this exact structure:
   "key_concerns": ["concern 1", "concern 2", ...],
   "key_positives": ["positive 1", "positive 2", ...],
   "notable_comments": [
-    {"source": "reddit"|"twitter", "text": "...", "sentiment": "positive"|"neutral"|"negative"}
+    {"source": "<source>", "text": "...", "sentiment": "positive"|"neutral"|"negative"}
   ],
   "summary": "2-3 sentence summary of overall public perception"
 }
 
 IMPORTANT: overall_sentiment_score must reflect the posts — use the full 0.0–1.0 range
 (do not default to 0.5 unless sentiment is genuinely mixed). Align it with the
-reddit/twitter labels you output.
+reddit/twitter labels you output. If a platform has no credible evidence, use
+"unknown" for that platform.
 """
 
 
-def _normalize_sentiment_payload(d: dict[str, Any]) -> dict[str, Any]:
+def _normalize_sentiment_payload(
+    d: dict[str, Any],
+    *,
+    coverage: list[dict[str, Any]],
+    sampled_signal_count: int,
+) -> dict[str, Any]:
     """Blend model score with platform labels so the score is not stuck at 0.5."""
 
     def lab_to_f(lab: str | None) -> float | None:
@@ -77,31 +91,99 @@ def _normalize_sentiment_payload(d: dict[str, Any]) -> dict[str, Any]:
     else:
         d["overall_sentiment_score"] = None
 
+    d["source_coverage"] = coverage
+    d["sampled_signal_count"] = sampled_signal_count
+    d.setdefault("reddit_sentiment", "unknown")
+    d.setdefault("twitter_sentiment", "unknown")
+    d.setdefault("key_concerns", [])
+    d.setdefault("key_positives", [])
+    d.setdefault("notable_comments", [])
+    d.setdefault("summary", "No public community data was available for analysis.")
+
+    normalized_comments: list[dict[str, Any]] = []
+    for comment in d.get("notable_comments") or []:
+        normalized_comments.append(
+            {
+                "source": str(comment.get("source") or "community").strip().lower(),
+                "text": short_text(comment.get("text"), max_chars=220),
+                "sentiment": str(comment.get("sentiment") or "neutral").strip().lower(),
+            }
+        )
+    d["notable_comments"] = normalized_comments[:6]
     return d
 
 
+def _sample_signals(
+    signals: list[dict[str, Any]],
+    *,
+    max_per_source: int = 4,
+    max_total: int = 18,
+) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for signal in dedupe_community_signals(signals):
+        grouped[str(signal.get("source") or "community").strip().lower()].append(signal)
+
+    sampled: list[dict[str, Any]] = []
+    ordered_sources = sorted(grouped.keys(), key=lambda source: (-len(grouped[source]), source))
+    for source in ordered_sources:
+        ranked = sorted(
+            grouped[source],
+            key=lambda item: (
+                -(item.get("engagement", 0) or 0),
+                str(item.get("created_at") or ""),
+            ),
+        )
+        sampled.extend(ranked[:max_per_source])
+
+    sampled.sort(
+        key=lambda item: (
+            -(item.get("engagement", 0) or 0),
+            str(item.get("created_at") or ""),
+        )
+    )
+    return sampled[:max_total]
+
+
 def analyze_sentiment(
-    reddit_posts: list[dict[str, Any]],
-    twitter_posts: list[dict[str, Any]],
+    community_signals: list[dict[str, Any]],
     idea: str,
 ) -> dict[str, Any]:
-    """Run GPT-4o sentiment analysis on scraped social content."""
+    """Run GPT-4o-mini sentiment analysis on normalized community signals."""
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is missing. Add it to your .env file.")
 
-    reddit_text = "\n\n".join(
-        f"[r/{p.get('subreddit', '?')}] {p.get('title', '')} — {p.get('body', '')}"
-        for p in reddit_posts[:20]
-    )
-    twitter_text = "\n\n".join(
-        f"@{p.get('author', '?')}: {p.get('text', '')}"
-        for p in twitter_posts[:30]
-    )
+    unique_signals = dedupe_community_signals(community_signals)
+    if not unique_signals:
+        return _normalize_sentiment_payload(
+            {},
+            coverage=[],
+            sampled_signal_count=0,
+        )
+
+    coverage = summarize_source_coverage(unique_signals)
+    sampled = _sample_signals(unique_signals)
+
+    grouped_lines: dict[str, list[str]] = defaultdict(list)
+    for signal in sampled:
+        source = str(signal.get("source") or "community").strip().lower()
+        title = short_text(signal.get("title"), max_chars=100)
+        text = short_text(signal.get("text"), max_chars=220)
+        url = signal.get("url", "")
+        prefix = f"{title} — {text}" if title and title != text else text
+        grouped_lines[source].append(prefix + (f" ({url})" if url else ""))
+
+    blocks: list[str] = []
+    for item in coverage:
+        source = item["source"]
+        label = source_label(source)
+        lines = grouped_lines.get(source, [])
+        body = "\n".join(f"- {line}" for line in lines) if lines else "- (no sampled items)"
+        blocks.append(f"--- {label} ({item['count']} total, {len(lines)} sampled) ---\n{body}")
 
     user_msg = (
         f"Business idea: {idea}\n\n"
-        f"--- REDDIT POSTS ({len(reddit_posts)} total) ---\n{reddit_text or '(none)'}\n\n"
-        f"--- TWITTER/X POSTS ({len(twitter_posts)} total) ---\n{twitter_text or '(none)'}"
+        f"Source coverage: {json.dumps(coverage, ensure_ascii=True)}\n\n"
+        + "\n\n".join(blocks)
     )
 
     client = OpenAI(api_key=OPENAI_API_KEY)
@@ -115,4 +197,8 @@ def analyze_sentiment(
         ],
     )
     data = json.loads(response.choices[0].message.content)
-    return _normalize_sentiment_payload(data)
+    return _normalize_sentiment_payload(
+        data,
+        coverage=coverage,
+        sampled_signal_count=len(sampled),
+    )

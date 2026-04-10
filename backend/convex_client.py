@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import httpx
@@ -75,3 +76,40 @@ def list_analyses() -> list[dict[str, Any]]:
 
 def get_analysis(job_id: str) -> dict[str, Any] | None:
     return query("jobs:getAnalysis", {"job_id": job_id})
+
+
+def get_scrape_cache(cache_key: str) -> Any:
+    try:
+        cached = query("jobs:getFreshScrapeCache", {"cache_key": cache_key})
+    except Exception:
+        return None
+    if not cached:
+        return None
+    payload = cached.get("payload")
+    if isinstance(payload, str):
+        try:
+            return json.loads(payload)
+        except json.JSONDecodeError:
+            return None
+    return payload
+
+
+def set_scrape_cache(
+    cache_key: str,
+    *,
+    kind: str,
+    payload: Any,
+    ttl_seconds: int,
+) -> None:
+    try:
+        mutation(
+            "jobs:putScrapeCache",
+            {
+                "cache_key": cache_key,
+                "kind": kind,
+                "payload": json.dumps(payload),
+                "expires_at": int(time.time() * 1000) + ttl_seconds * 1000,
+            },
+        )
+    except Exception:
+        pass

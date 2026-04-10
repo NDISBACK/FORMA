@@ -377,10 +377,75 @@ def generate_pdf(result: dict[str, Any]) -> bytes:
             comp_data,
             col_widths=[_AVAIL * 0.2, _AVAIL * 0.2, _AVAIL * 0.4, _AVAIL * 0.2],
         ))
+
+        for c in matrix[:3]:
+            story.append(Paragraph(c.get("name", "Competitor"), _H2))
+            failure_modes = c.get("failure_modes") or []
+            why_they_fail = c.get("why_they_fail") or []
+            warning_signals = c.get("warning_signals") or []
+            strategic_mistakes = c.get("strategic_mistakes") or []
+            evidence = c.get("evidence") or []
+
+            if failure_modes:
+                story.append(_p("<b>How they fail:</b>"))
+                story.extend(_bullet_list(failure_modes))
+            if why_they_fail:
+                story.append(_p("<b>Why they fail:</b>"))
+                story.extend(_bullet_list(why_they_fail))
+            if warning_signals:
+                story.append(_p("<b>Warning signals:</b>"))
+                story.extend(_bullet_list(warning_signals))
+            if strategic_mistakes:
+                story.append(_p("<b>Strategic mistakes:</b>"))
+                story.extend(_bullet_list(strategic_mistakes))
+            if evidence:
+                story.append(_p("<b>Evidence:</b>"))
+                story.extend(_bullet_list(evidence))
     our_adv = comp_intel.get("our_advantage")
     if our_adv:
         story.append(Paragraph("Our Advantage", _H2))
         story.append(_p(our_adv))
+    story.append(Spacer(1, 4))
+    story.append(_hr())
+
+    # ================================================================
+    # VC FUNDABILITY
+    # ================================================================
+    story.extend(_section_banner("Would I Fund This?"))
+    vc_decision = analysis.get("would_i_fund", "maybe")
+    vc_score = analysis.get("would_i_fund_score", "-")
+    vc_subscores = analysis.get("would_i_fund_subscores") or {}
+    vc_rationale = analysis.get("would_i_fund_rationale") or {}
+
+    vc_data = [
+        [_p("<b>Decision</b>"), _p(str(vc_decision).upper())],
+        [_p("<b>Fundability Score</b>"), _p(f"{vc_score}/100")],
+    ]
+    story.append(_data_table(vc_data, col_widths=[_AVAIL * 0.35, _AVAIL * 0.65]))
+    story.append(Spacer(1, 4))
+
+    if vc_subscores:
+        sub_data = [[_p("<b>Dimension</b>"), _p("<b>Score</b>")]]
+        labels = {
+            "team_execution": "Team Execution",
+            "market_size_quality": "Market Size Quality",
+            "moat_defensibility": "Moat Defensibility",
+            "traction_signals": "Traction Signals",
+            "risk_profile": "Risk Profile",
+        }
+        for key, label in labels.items():
+            sub_data.append([_p(label), _p(f"{vc_subscores.get(key, '-')} / 100")])
+        story.append(_data_table(sub_data, col_widths=[_AVAIL * 0.6, _AVAIL * 0.4]))
+        story.append(Spacer(1, 4))
+
+    overall_rationale = vc_rationale.get("overall")
+    if overall_rationale:
+        story.append(_p(f"<b>Rationale:</b> {overall_rationale}"))
+
+    blockers = vc_rationale.get("why_not_fundable") or []
+    if blockers:
+        story.append(Paragraph("Why Not Fully Fundable Yet", _H2))
+        story.extend(_bullet_list(blockers))
     story.append(Spacer(1, 4))
     story.append(_hr())
 
@@ -395,6 +460,13 @@ def generate_pdf(result: dict[str, Any]) -> bytes:
         [_p("<b>Overall Score</b>"),
          _p(str(sentiment.get("overall_sentiment_score", "-")))],
     ]
+    coverage = sentiment.get("source_coverage") or []
+    if coverage:
+        coverage_text = ", ".join(
+            f"{item.get('label') or item.get('source', 'Community')}: {item.get('count', 0)}"
+            for item in coverage
+        )
+        sent_data.append([_p("Coverage"), _p(coverage_text)])
     story.append(_data_table(sent_data, col_widths=[_AVAIL * 0.4, _AVAIL * 0.6]))
     story.append(Spacer(1, 4))
     story.append(_p(sentiment.get("summary", "-")))
@@ -470,6 +542,29 @@ def generate_pdf(result: dict[str, Any]) -> bytes:
     story.append(_p(analysis.get("go_to_market", "-")))
     story.append(Paragraph("Revenue Model", _H2))
     story.append(_p(analysis.get("revenue_model", "-")))
+    story.append(Spacer(1, 4))
+    story.append(_hr())
+
+    # ================================================================
+    # PRIORITIZED IMPROVEMENT SUGGESTIONS
+    # ================================================================
+    story.extend(_section_banner("How to Improve This Idea"))
+    improvements = analysis.get("improvement_suggestions") or []
+    if improvements:
+        for item in sorted(improvements, key=lambda x: x.get("priority", 99))[:6]:
+            priority = item.get("priority", "-")
+            area = item.get("area", "operations")
+            effort = item.get("effort", "medium")
+            story.append(Paragraph(f"Priority {priority} — {area} ({effort} effort)", _H2))
+            story.append(_p(f"<b>What to improve:</b> {item.get('what_to_improve', '-') }"))
+            story.append(_p(f"<b>Why it matters:</b> {item.get('why_it_matters', '-') }"))
+            story.append(_p(f"<b>How to do it:</b> {item.get('how_to_do_it', '-') }"))
+            story.append(_p(f"<b>Expected impact:</b> {item.get('expected_impact', '-') }"))
+            story.append(Spacer(1, 2))
+    else:
+        story.append(_p("No prioritized improvement suggestions were generated."))
+    story.append(Spacer(1, 4))
+    story.append(_hr())
 
     # ================================================================
     # WEB SOURCES

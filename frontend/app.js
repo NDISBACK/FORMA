@@ -145,11 +145,11 @@ const MAX_DPR = 1.5;
     colorStops: gl.getUniformLocation(prog, 'uColorStops')
   };
 
-  // Indigo → Forma gold → Indigo
+  // Deep blue → Forma blue accent → Deep blue
   const COLOR_STOPS = new Float32Array([
-    0.082, 0.153, 0.373,
-    0.784, 0.706, 0.376,
-    0.082, 0.153, 0.373
+    0.039, 0.039, 0.059,
+    0.357, 0.549, 1.0,
+    0.039, 0.039, 0.059
   ]);
 
   function resize() {
@@ -191,7 +191,7 @@ const MAX_DPR = 1.5;
   if (!canvas || !container) return;
 
   const ctx        = canvas.getContext('2d');
-  const LINE_COLOR = 'rgba(200,181,96,0.12)';
+  const LINE_COLOR = 'rgba(91,140,255,0.12)';
   const shouldRun  = createGate('analyse');
 
   /* Perlin noise setup */
@@ -788,7 +788,7 @@ const MAX_DPR = 1.5;
 
 (function () {
   const themes = [
-    { bg: {r:11,g:11,b:9},  dot: {r:200,g:181,b:96}  },  // gold    (hero)
+    { bg: {r:10,g:10,b:15},  dot: {r:91,g:140,b:255}  },  // blue    (hero)
     { bg: {r:12,g:10,b:10}, dot: {r:192,g:80, b:74}   },  // crimson (analyse)
     { bg: {r:10,g:11,b:15}, dot: {r:80, g:130,b:200}  },  // slate   (how)
     { bg: {r:9, g:13,b:11}, dot: {r:80, g:175,b:120}  }   // emerald (features)
@@ -917,116 +917,24 @@ async function startAnalysis() {
   const idea  = input.value.trim();
   if (!idea) { input.focus(); return; }
 
-  const statusBar = document.getElementById('status-bar');
-  const statusMsg = document.getElementById('status-msg');
-  const report    = document.getElementById('report');
-  const stepIds   = ['step-1','step-2','step-3','step-4'];
-
-  report.classList.remove('visible');
-  statusBar.classList.add('visible');
-  resetProgress();
-
-  stepIds.forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.remove('active', 'done');
-  });
-
-  let jobId;
   try {
     const res = await fetch(`${API_BASE}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idea })
     });
+    if (!res.ok) throw new Error(`Failed to start analysis (${res.status})`);
     const data = await res.json();
-    jobId = data.job_id;
-    _currentJobId = jobId;
+    if (!data?.job_id) throw new Error('No job_id returned from backend');
+    const params = new URLSearchParams({ job_id: data.job_id, idea });
+    window.location.href = `report.html?${params.toString()}`;
   } catch (err) {
     console.error('Failed to start analysis:', err);
-    populateReport(idea, fallbackReport());
-    statusBar.classList.remove('visible');
-    report.classList.add('visible');
-    report.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
+    const statusBar = document.getElementById('status-bar');
+    const statusMsg = document.getElementById('status-msg');
+    if (statusBar) statusBar.classList.add('visible');
+    if (statusMsg) statusMsg.textContent = 'Could not start analysis. Please try again.';
   }
-
-  const startTime = Date.now();
-  _etaInterval = setInterval(() => {
-    const bar = document.getElementById('progress-fill');
-    if (bar) {
-      const current = parseFloat(bar.style.width) || 0;
-      updateProgress(current, startTime);
-    }
-  }, 1000);
-
-  let lastStep = -1;
-
-  async function poll() {
-    try {
-      const res = await fetch(`${API_BASE}/jobs/${jobId}`);
-      const job = await res.json();
-
-      const pct = job.progress || 0;
-      updateProgress(pct, startTime);
-
-      if (job.label && statusMsg) {
-        statusMsg.textContent = job.label;
-      }
-
-      const step = progressToStep(pct);
-      if (step !== lastStep) {
-        stepIds.forEach((id, j) => {
-          const el = document.getElementById(id);
-          el.classList.toggle('active', j === step);
-          el.classList.toggle('done', j < step);
-        });
-        lastStep = step;
-      }
-
-      if (job.status === 'complete') {
-        clearInterval(_etaInterval);
-        updateProgress(100, startTime);
-
-        stepIds.forEach(id => {
-          const el = document.getElementById(id);
-          el.classList.remove('active');
-          el.classList.add('done');
-        });
-
-        let result = job.result;
-        if (typeof result === 'string') {
-          try { result = JSON.parse(result); } catch (e) { /* already object */ }
-        }
-
-        populateReport(idea, result || fallbackReport());
-        statusBar.classList.remove('visible');
-        report.classList.add('visible');
-        report.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-
-      if (job.status === 'failed' || job.status === 'error') {
-        clearInterval(_etaInterval);
-        console.error('Job failed:', job.error || job.status);
-        populateReport(idea, fallbackReport());
-        statusBar.classList.remove('visible');
-        report.classList.add('visible');
-        report.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-
-      setTimeout(poll, 2000);
-    } catch (err) {
-      clearInterval(_etaInterval);
-      console.error('Polling error:', err);
-      populateReport(idea, fallbackReport());
-      statusBar.classList.remove('visible');
-      report.classList.add('visible');
-      report.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  poll();
 }
 
 function fallbackReport() {
@@ -1052,19 +960,115 @@ function fallbackReport() {
       go_to_market: 'Start with local launch, expand via word-of-mouth and content marketing.',
       risk_factors: ['Customer acquisition cost may be high in the early stages.'],
       recommendations: ['Validate with 50 pilot users', 'Build an MVP in 4 weeks', 'Secure seed funding'],
-      idea_scores: { market_size: 7, competition: 6, feasibility: 8, timing: 9, revenue_potential: 7, founder_fit: 6 }
+      idea_scores: { market_size: 7, competition: 6, feasibility: 8, timing: 9, revenue_potential: 7, founder_fit: 6 },
+      would_i_fund: 'maybe',
+      would_i_fund_score: 63,
+      would_i_fund_subscores: {
+        team_execution: 60,
+        market_size_quality: 72,
+        moat_defensibility: 54,
+        traction_signals: 48,
+        risk_profile: 58
+      },
+      would_i_fund_rationale: {
+        overall: 'The idea has market promise, but I would want stronger proof of repeatable acquisition and clear defensibility before committing.',
+        team_execution: 'Execution plan is credible but still thin on proof of delivery velocity.',
+        market_size_quality: 'The market appears meaningful with room for paid SaaS outcomes.',
+        moat_defensibility: 'Differentiation exists, but competitive moat is not yet durable.',
+        traction_signals: 'Early demand signals are encouraging but not yet conversion-backed.',
+        risk_profile: 'Go-to-market and CAC risk remain the main concerns.',
+        why_not_fundable: [
+          'No validated wedge channel with predictable acquisition cost yet.',
+          'Limited evidence that incumbents cannot replicate the core feature set quickly.'
+        ]
+      },
+      improvement_suggestions: [
+        {
+          priority: 1,
+          area: 'gtm',
+          what_to_improve: 'Focus on a single acquisition wedge with measurable CAC payback.',
+          why_it_matters: 'Investor confidence rises when growth mechanics are predictable and capital efficient.',
+          how_to_do_it: 'Run 2-3 channel sprints, pick one winner, and define weekly activation/conversion targets.',
+          expected_impact: 'Higher conversion consistency and stronger early traction narrative.',
+          effort: 'medium'
+        },
+        {
+          priority: 2,
+          area: 'moat',
+          what_to_improve: 'Increase defensibility through proprietary workflow and data advantages.',
+          why_it_matters: 'Without a moat, incumbents can copy features and compress your upside.',
+          how_to_do_it: 'Add unique integrations, domain-specific automation, and stickier historical data loops.',
+          expected_impact: 'Lower competitive risk and better long-term valuation story.',
+          effort: 'high'
+        },
+        {
+          priority: 3,
+          area: 'product',
+          what_to_improve: 'Reduce onboarding friction for first-time users.',
+          why_it_matters: 'Early drop-off weakens retention and masks true product demand.',
+          how_to_do_it: 'Instrument the first-session journey and remove top 2 activation bottlenecks.',
+          expected_impact: 'Improved activation, retention, and confidence in product-market fit.',
+          effort: 'medium'
+        }
+      ]
     },
     sentiment: {
       summary: 'Generally positive sentiment with some concerns about market timing.',
       reddit_sentiment: 'positive',
       twitter_sentiment: 'neutral',
       overall_sentiment_score: 0.72,
+      source_coverage: [
+        { source: 'reddit', label: 'Reddit', count: 8 },
+        { source: 'twitter', label: 'X', count: 6 },
+        { source: 'hackernews', label: 'Hacker News', count: 2 }
+      ],
+      sampled_signal_count: 8,
       key_positives: ['Strong interest from early adopters', 'Fills a gap in the current market', 'Scalable business model'],
       key_concerns: ['Established competitors may respond aggressively', 'Customer acquisition cost could be high'],
       notable_comments: [
         { source: 'reddit', text: "This is exactly what I've been looking for — existing tools are too complex.", sentiment: 'positive' },
         { source: 'twitter', text: 'Interesting concept but the market is already crowded.', sentiment: 'negative' },
         { source: 'reddit', text: 'Would definitely try this if priced right.', sentiment: 'positive' }
+      ]
+    },
+    competitor_intel: {
+      comparison_matrix: [
+        {
+          name: 'Existing players',
+          pricing: '$29-$99/month tiers',
+          key_features: ['Invoice automation', 'Tax reports', 'Client reminders'],
+          weaknesses: ['Complex setup for solo users'],
+          threat_level: 'high',
+          failure_modes: ['Fails to retain freelancers due to complexity'],
+          why_they_fail: ['Feature-heavy UX overwhelms first-time users'],
+          warning_signals: ['Increasing churn after first billing cycle'],
+          strategic_mistakes: ['Prioritizing enterprise features over freelancer workflows'],
+          evidence: ['Multiple review threads mention steep onboarding friction']
+        },
+        {
+          name: 'Local businesses',
+          pricing: 'Low-cost custom bundles',
+          key_features: ['Human support', 'Localized workflows'],
+          weaknesses: ['Poor product scalability'],
+          threat_level: 'low',
+          failure_modes: ['Cannot scale support economics'],
+          why_they_fail: ['Manual ops and low margins'],
+          warning_signals: ['Slow response times as customer count grows'],
+          strategic_mistakes: ['Underinvesting in automation infrastructure'],
+          evidence: ['Public testimonials complain about delayed support']
+        },
+        {
+          name: 'Global entrants',
+          pricing: 'Freemium + premium addons',
+          key_features: ['Brand trust', 'Integrations', 'Large ecosystem'],
+          weaknesses: ['Weak local compliance UX'],
+          threat_level: 'medium',
+          failure_modes: ['Struggle with local market adaptation'],
+          why_they_fail: ['Generic workflows miss regional compliance needs'],
+          warning_signals: ['Low activation in region-specific cohorts'],
+          strategic_mistakes: ['One-size-fits-all rollout strategy'],
+          evidence: ['Market feedback highlights missing local tax support']
+        }
       ]
     },
     investor_intel: {},
@@ -1087,6 +1091,19 @@ function esc(s) {
   return d.innerHTML;
 }
 
+function formatSourceLabel(source) {
+  const key = (source || 'community').toLowerCase();
+  const labels = {
+    reddit: 'Reddit',
+    twitter: 'X',
+    hackernews: 'Hacker News',
+    producthunt: 'Product Hunt',
+    github: 'GitHub',
+    community: 'Community'
+  };
+  return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function populateList(ulId, items) {
   const ul = document.getElementById(ulId);
   if (!ul) return;
@@ -1105,6 +1122,161 @@ function deriveIdeaScoresFromConfidence(a) {
     revenue_potential: base,
     founder_fit: base
   };
+}
+
+function clampScore100(v, fallback = 50) {
+  const n = Number(v);
+  if (Number.isNaN(n)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function normalizeVCSubscores(a) {
+  const base = clampScore100(a?.would_i_fund_score, clampScore100((a?.confidence_score || 0.5) * 100, 50));
+  const raw = a?.would_i_fund_subscores || {};
+  return {
+    team_execution: clampScore100(raw.team_execution, base),
+    market_size_quality: clampScore100(raw.market_size_quality, base),
+    moat_defensibility: clampScore100(raw.moat_defensibility, base),
+    traction_signals: clampScore100(raw.traction_signals, base),
+    risk_profile: clampScore100(raw.risk_profile, base)
+  };
+}
+
+function renderCompetitorDeepDive(compIntel) {
+  const section = document.getElementById('competitor-deepdive-section');
+  const listEl = document.getElementById('competitor-deepdive-list');
+  if (!section || !listEl) return;
+
+  const rows = (compIntel?.comparison_matrix || []).slice(0, 3);
+  if (!rows.length) {
+    section.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  section.style.display = '';
+  listEl.innerHTML = rows.map((c) => {
+    const threat = (c.threat_level || 'medium').toLowerCase();
+    const failureModes = (c.failure_modes || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    const whyFail = (c.why_they_fail || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    const signals = (c.warning_signals || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    const mistakes = (c.strategic_mistakes || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    const evidence = (c.evidence || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    return `<div class="comp-detail-card">
+      <div class="comp-detail-head">
+        <p class="comp-detail-name">${esc(c.name || 'Unknown competitor')}</p>
+        <span class="comp-detail-threat ${threat}">${esc(threat)} threat</span>
+      </div>
+      <div class="comp-detail-grid">
+        <div><p class="comp-detail-label">How they fail</p><ul>${failureModes || '<li>No explicit failure mode identified</li>'}</ul></div>
+        <div><p class="comp-detail-label">Why they fail</p><ul>${whyFail || '<li>No root-cause detail available</li>'}</ul></div>
+        <div><p class="comp-detail-label">Warning signals</p><ul>${signals || '<li>No warning signals surfaced</li>'}</ul></div>
+        <div><p class="comp-detail-label">Strategic mistakes</p><ul>${mistakes || '<li>No strategic mistakes listed</li>'}</ul></div>
+      </div>
+      <div class="comp-detail-evidence">
+        <p class="comp-detail-label">Evidence</p>
+        <ul>${evidence || '<li>No evidence links were returned</li>'}</ul>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderVCPanel(a) {
+  const panel = document.getElementById('vc-panel');
+  if (!panel) return;
+
+  const score = clampScore100(a?.would_i_fund_score, clampScore100((a?.confidence_score || 0.5) * 100, 50));
+  const subs = normalizeVCSubscores(a);
+  const decisionRaw = String(a?.would_i_fund || '').toLowerCase();
+  const decision = ['yes', 'no', 'maybe'].includes(decisionRaw)
+    ? decisionRaw
+    : (score >= 70 ? 'yes' : score <= 44 ? 'no' : 'maybe');
+  const rationale = a?.would_i_fund_rationale || {};
+
+  const fill = document.getElementById('vc-score-fill');
+  const scoreVal = document.getElementById('vc-score-val');
+  const badge = document.getElementById('vc-decision-badge');
+  const overall = document.getElementById('vc-overall-rationale');
+  const subsEl = document.getElementById('vc-subscores');
+  const blockersEl = document.getElementById('vc-blockers');
+
+  if (fill) fill.style.width = `${score}%`;
+  if (scoreVal) scoreVal.textContent = `${score}/100`;
+  if (badge) {
+    badge.textContent = decision;
+    badge.className = `vc-decision-badge ${decision}`;
+  }
+  if (overall) overall.textContent = rationale.overall || 'No VC rationale returned.';
+
+  const subLabels = {
+    team_execution: 'Team execution',
+    market_size_quality: 'Market quality',
+    moat_defensibility: 'Moat defensibility',
+    traction_signals: 'Traction signals',
+    risk_profile: 'Risk profile'
+  };
+  if (subsEl) {
+    subsEl.innerHTML = Object.entries(subLabels).map(([key, label]) => {
+      const val = subs[key];
+      const reason = rationale[key] || 'No detailed rationale returned.';
+      return `<div class="vc-sub-card">
+        <div class="vc-sub-head"><span>${label}</span><strong>${val}</strong></div>
+        <div class="vc-sub-track"><div class="vc-sub-fill" style="width:${val}%"></div></div>
+        <p class="vc-sub-reason">${esc(reason)}</p>
+      </div>`;
+    }).join('');
+  }
+
+  const blockers = Array.isArray(rationale.why_not_fundable) ? rationale.why_not_fundable : [];
+  if (blockersEl) {
+    if (blockers.length) {
+      blockersEl.innerHTML = `<p class="vc-blockers-label">Why not fully fundable yet</p><ul>${blockers.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    } else {
+      blockersEl.innerHTML = '';
+    }
+  }
+}
+
+function renderImprovementSuggestions(a) {
+  const panel = document.getElementById('improve-panel');
+  const listEl = document.getElementById('improve-list');
+  if (!panel || !listEl) return;
+
+  const raw = Array.isArray(a?.improvement_suggestions) ? a.improvement_suggestions : [];
+  if (!raw.length) {
+    panel.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  panel.style.display = '';
+  const effortRank = { low: 1, medium: 2, high: 3 };
+  const items = raw
+    .map((item, idx) => ({
+      priority: Math.max(1, Math.min(5, Number(item?.priority) || (idx + 1))),
+      area: String(item?.area || 'operations').toLowerCase(),
+      what_to_improve: item?.what_to_improve || 'Define a concrete improvement action.',
+      why_it_matters: item?.why_it_matters || 'This improves competitiveness and execution quality.',
+      how_to_do_it: item?.how_to_do_it || 'Break this into milestones and validate quickly.',
+      expected_impact: item?.expected_impact || 'Should improve fundability and market outcomes.',
+      effort: ['low', 'medium', 'high'].includes(String(item?.effort || '').toLowerCase())
+        ? String(item.effort).toLowerCase()
+        : 'medium'
+    }))
+    .sort((a1, a2) => (a1.priority - a2.priority) || (effortRank[a1.effort] - effortRank[a2.effort]));
+
+  listEl.innerHTML = items.map((item) => `
+    <div class="improve-card">
+      <div class="improve-head">
+        <span class="improve-priority">Priority ${item.priority}</span>
+        <span class="improve-meta">${esc(item.area)} • ${esc(item.effort)} effort</span>
+      </div>
+      <p class="improve-title">${esc(item.what_to_improve)}</p>
+      <p class="improve-line"><strong>Why it matters:</strong> ${esc(item.why_it_matters)}</p>
+      <p class="improve-line"><strong>How to do it:</strong> ${esc(item.how_to_do_it)}</p>
+      <p class="improve-line"><strong>Expected impact:</strong> ${esc(item.expected_impact)}</p>
+    </div>
+  `).join('');
 }
 
 /* --- Main report population --- */
@@ -1147,6 +1319,9 @@ function populateReport(idea, data) {
       return `<span class="comp-badge ${lvl}" title="${esc(c.description || '')}">${esc(c.name)}</span>`;
     }).join('');
   }
+  renderCompetitorDeepDive(data.competitor_intel || {});
+  renderVCPanel(a);
+  renderImprovementSuggestions(a);
 
   /* Sentiment */
   renderSentimentPanel(sent);
@@ -1238,6 +1413,21 @@ function sentimentLabelToScore(label) {
   return 0.52;
 }
 
+function renderSourceCoverage(coverage) {
+  const el = document.getElementById('source-coverage');
+  if (!el) return;
+  if (!coverage || !coverage.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = coverage.map((item) => {
+    const source = (item.source || 'community').toLowerCase();
+    const label = item.label || formatSourceLabel(source);
+    const count = Number(item.count || 0);
+    return `<span class="source-pill ${source}">${esc(label)} <strong>${count}</strong></span>`;
+  }).join('');
+}
+
 function renderSentimentPanel(sent) {
   if (!sent || !Object.keys(sent).length) {
     const panel = document.getElementById('sentiment-panel');
@@ -1289,6 +1479,7 @@ function renderSentimentPanel(sent) {
   }
   sentBadge('reddit-sentiment', sent.reddit_sentiment);
   sentBadge('twitter-sentiment', sent.twitter_sentiment);
+  renderSourceCoverage(sent.source_coverage || []);
 
   populateList('sent-positives', sent.key_positives);
   populateList('sent-concerns', sent.key_concerns);
@@ -1300,11 +1491,13 @@ function renderSentimentPanel(sent) {
         const src = (c.source || '').toLowerCase();
         const dot = (c.sentiment || 'neutral').toLowerCase();
         return `<div class="nc-card">
-          <span class="nc-source ${src}">${esc(c.source)}</span>
+          <span class="nc-source ${src || 'community'}">${esc(formatSourceLabel(c.source || 'community'))}</span>
           <span class="nc-text">"${esc(c.text)}"</span>
           <span class="nc-dot ${dot}"></span>
         </div>`;
       }).join('');
+  } else if (commentsEl) {
+    commentsEl.innerHTML = '';
   }
 }
 
@@ -1326,7 +1519,7 @@ function drawRadar(scores) {
 
   const keys = ['market_size', 'competition', 'feasibility', 'timing', 'revenue_potential', 'founder_fit'];
   const labels = ['Market Size', 'Competition', 'Feasibility', 'Timing', 'Revenue', 'Founder Fit'];
-  const colors = ['#c8b560', '#c0504a', '#5088c8', '#50af78', '#b07cd8', '#d89c4c'];
+  const colors = ['#5B8CFF', '#FF4D4D', '#22FF88', '#FFD166', '#b07cd8', '#d89c4c'];
   const cx = W / 2, cy = H / 2, R = 110;
   const n = keys.length;
 
@@ -1368,9 +1561,9 @@ function drawRadar(scores) {
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.closePath();
-  ctx.fillStyle = 'rgba(200,181,96,0.18)';
+  ctx.fillStyle = 'rgba(91,140,255,0.18)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(200,181,96,0.7)';
+  ctx.strokeStyle = 'rgba(91,140,255,0.7)';
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -1405,7 +1598,7 @@ function drawRadar(scores) {
 /* --- Flowchart --- */
 
 if (typeof mermaid !== 'undefined') {
-  mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#2a2a28', primaryTextColor: '#f2f0eb', lineColor: '#c8b560', secondaryColor: '#1a1a18' } });
+  mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#1a1a28', primaryTextColor: '#E8EAFF', lineColor: '#5B8CFF', secondaryColor: '#0A0A0F' } });
 }
 
 function renderFlowchart(mermaidCode) {

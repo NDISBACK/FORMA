@@ -7,6 +7,12 @@ import warnings
 from typing import Any
 
 from backend.config import EXA_API_KEY
+from backend.convex_client import get_scrape_cache, set_scrape_cache
+from backend.pipeline.community_signals import (
+    dedupe_community_signals,
+    normalize_query,
+    source_from_url,
+)
 
 warnings.filterwarnings(
     "ignore",
@@ -17,6 +23,15 @@ warnings.filterwarnings(
 from exa_py import Exa
 
 
+_COMMUNITY_CACHE_TTL_SECONDS = 60 * 60 * 6
+
+
+def _get_exa() -> Exa:
+    if not EXA_API_KEY:
+        raise ValueError("EXA_API_KEY is missing. Add it to your .env file.")
+    return Exa(api_key=EXA_API_KEY)
+
+
 def search_web_deep(
     prompt: str,
     *,
@@ -25,13 +40,10 @@ def search_web_deep(
     search_type: str = "deep",
 ) -> list[dict[str, Any]]:
     """Run an Exa search for a prompt and return normalized results."""
-    if not EXA_API_KEY:
-        raise ValueError("EXA_API_KEY is missing. Add it to your .env file.")
-
     if not prompt or not prompt.strip():
         raise ValueError("Prompt cannot be empty.")
 
-    exa = Exa(api_key=EXA_API_KEY)
+    exa = _get_exa()
     response = exa.search_and_contents(
         prompt.strip(),
         type=search_type,
@@ -49,6 +61,69 @@ def search_web_deep(
                 "text": getattr(item, "text", None),
             }
         )
+    return normalized
+
+
+def search_community_signals(
+    idea: str,
+    *,
+    per_source: int = 2,
+    max_characters: int = 900,
+) -> list[dict[str, Any]]:
+    """Collect small, low-cost community discussion signals via Exa."""
+    clean_idea = normalize_query(idea)
+    if not clean_idea:
+        return []
+
+    cache_key = f"community-signals:{clean_idea}:{per_source}:{max_characters}"
+    cached = get_scrape_cache(cache_key)
+    if cached:
+        return cached
+
+    exa = _get_exa()
+    query_specs = [
+        ("hackernews", f'site:news.ycombinator.com "{idea}" startup discussion'),
+        ("producthunt", f'site:producthunt.com "{idea}" launch review'),
+        ("github", f'site:github.com "{idea}" issue discussion repository'),
+    ]
+
+    collected: list[dict[str, Any]] = []
+    for source, query in query_specs:
+        response = exa.search_and_contents(
+            query,
+            type="fast",
+            num_results=per_source,
+            text={"max_characters": max_characters},
+        )
+        for item in response.results:
+            collected.append(
+                {
+                    "source": source,
+                    "title": item.title,
+                    "url": item.url,
+                    "published_date": getattr(item, "published_date", None),
+                    "text": getattr(item, "text", None),
+                }
+            )
+
+    normalized = []
+    for item in dedupe_community_signals(collected):
+        normalized.append(
+            {
+                "source": item.get("source") or source_from_url(item.get("url")),
+                "title": item.get("title"),
+                "url": item.get("url"),
+                "published_date": item.get("published_date"),
+                "text": item.get("text"),
+            }
+        )
+
+    set_scrape_cache(
+        cache_key,
+        kind="community_signals",
+        payload=normalized,
+        ttl_seconds=_COMMUNITY_CACHE_TTL_SECONDS,
+    )
     return normalized
 
 

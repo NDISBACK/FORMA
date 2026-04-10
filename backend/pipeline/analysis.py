@@ -10,7 +10,7 @@ from backend.config import OPENAI_API_KEY
 _SYSTEM_PROMPT = """\
 You are a top-tier business analyst. You will receive:
 1. Web research results about a business idea
-2. Public sentiment analysis from Reddit and Twitter
+2. Public sentiment analysis from Reddit, X, and other community sources
 
 Synthesize everything into a comprehensive business analysis. Return ONLY valid \
 JSON (no markdown fences) with this exact structure:
@@ -33,6 +33,35 @@ JSON (no markdown fences) with this exact structure:
   "recommendations": ["actionable next step 1", "..."],
   "verdict": "Promising | Risky | Saturated | Niche",
   "confidence_score": <float 0-1>,
+  "would_i_fund": "yes" | "no" | "maybe",
+  "would_i_fund_score": <int 0-100>,
+  "would_i_fund_subscores": {
+    "team_execution": <int 0-100>,
+    "market_size_quality": <int 0-100>,
+    "moat_defensibility": <int 0-100>,
+    "traction_signals": <int 0-100>,
+    "risk_profile": <int 0-100>
+  },
+  "would_i_fund_rationale": {
+    "overall": "Detailed investment rationale",
+    "team_execution": "Why this sub-score was assigned",
+    "market_size_quality": "Why this sub-score was assigned",
+    "moat_defensibility": "Why this sub-score was assigned",
+    "traction_signals": "Why this sub-score was assigned",
+    "risk_profile": "Why this sub-score was assigned",
+    "why_not_fundable": ["Specific blockers if decision is no/maybe"]
+  },
+  "improvement_suggestions": [
+    {
+      "priority": <int 1-5 where 1 is highest>,
+      "area": "product|market|gtm|moat|pricing|team|operations",
+      "what_to_improve": "specific improvement",
+      "why_it_matters": "why this change increases win probability",
+      "how_to_do_it": "concrete implementation approach",
+      "expected_impact": "expected outcome if executed well",
+      "effort": "low|medium|high"
+    }
+  ],
   "idea_scores": {
     "market_size": <int 1-10>,
     "competition": <int 1-10, where 10 = very low competition / favorable>,

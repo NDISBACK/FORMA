@@ -21,7 +21,12 @@ Generate a detailed competitive comparison matrix. Return ONLY valid JSON \
       "pricing": "pricing info or 'Unknown'",
       "key_features": ["feature 1", "feature 2", ...],
       "weaknesses": ["weakness 1", ...],
-      "threat_level": "high|medium|low"
+      "threat_level": "high|medium|low",
+      "failure_modes": ["how this competitor could fail", "..."],
+      "why_they_fail": ["root-cause reasons they struggle", "..."],
+      "warning_signals": ["early warning signal 1", "..."],
+      "strategic_mistakes": ["mistake 1", "..."],
+      "evidence": ["source-backed proof points", "..."]
     }
   ],
   "our_advantage": "2-3 sentences on how the user's idea can differentiate",
@@ -29,7 +34,35 @@ Generate a detailed competitive comparison matrix. Return ONLY valid JSON \
 }
 """
 
-_MAX_COMPETITORS = 4
+_MAX_COMPETITORS = 3
+
+
+def _normalize_row(row: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(row or {})
+    normalized["name"] = str(normalized.get("name") or "Unknown competitor")
+    normalized["pricing"] = str(normalized.get("pricing") or "Unknown")
+    normalized["threat_level"] = str(normalized.get("threat_level") or "medium").lower()
+    if normalized["threat_level"] not in {"high", "medium", "low"}:
+        normalized["threat_level"] = "medium"
+
+    list_fields = [
+        "key_features",
+        "weaknesses",
+        "failure_modes",
+        "why_they_fail",
+        "warning_signals",
+        "strategic_mistakes",
+        "evidence",
+    ]
+    for field in list_fields:
+        value = normalized.get(field)
+        if isinstance(value, list):
+            normalized[field] = [str(x) for x in value if str(x).strip()][:6]
+        elif value:
+            normalized[field] = [str(value)]
+        else:
+            normalized[field] = []
+    return normalized
 
 
 def analyze_competitors(
@@ -81,4 +114,12 @@ def analyze_competitors(
             {"role": "user", "content": user_msg},
         ],
     )
-    return json.loads(response.choices[0].message.content)
+    payload = json.loads(response.choices[0].message.content)
+    matrix = payload.get("comparison_matrix")
+    if not isinstance(matrix, list):
+        matrix = []
+    payload["comparison_matrix"] = [_normalize_row(row) for row in matrix[:_MAX_COMPETITORS]]
+    payload["our_advantage"] = str(payload.get("our_advantage") or "")
+    gaps = payload.get("gaps_in_market")
+    payload["gaps_in_market"] = [str(x) for x in gaps] if isinstance(gaps, list) else []
+    return payload
