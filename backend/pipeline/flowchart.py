@@ -8,19 +8,79 @@ from openai import OpenAI
 from backend.config import OPENAI_API_KEY
 
 _SYSTEM_PROMPT = """\
-You are a Mermaid.js diagram expert. Given a structured business analysis, \
-create a clear, detailed Mermaid flowchart that visualizes the business model.
+You are a strict Mermaid.js generator.
 
-Rules:
-- Use `flowchart TD` (top-down) syntax.
-- Include nodes for: idea, target audience, value proposition, revenue streams, \
-  key activities, channels, cost structure, and competitive advantages.
-- Use subgraphs to group related nodes (e.g., "Revenue", "Operations", "Market").
-- Use descriptive edge labels.
-- Do NOT use spaces in node IDs — use camelCase or underscores.
-- Do NOT use the reserved word "end" as a node ID.
-- Wrap labels with special characters in double quotes.
-- Return ONLY the raw Mermaid code, no markdown fences, no explanation.
+Return ONLY valid Mermaid flowchart code.
+
+Requirements:
+- Use: flowchart TD
+- Output must start EXACTLY with: flowchart TD
+- Do NOT include any explanation, markdown, or text before/after
+
+STRICT RULES:
+- Use ONLY alphanumeric node IDs with underscores (no spaces)
+- Example: idea_node, target_audience
+- NEVER use reserved words like: end, class, graph
+
+- ALWAYS define nodes BEFORE connecting them
+- Node format: id["Label"]
+
+- ONLY use arrows: -->
+- NEVER use other arrow types
+
+- Edge labels MUST use this format:
+  A -->|label| B
+
+- DO NOT use:
+  - parentheses ()
+  - colons :
+  - semicolons ;
+  - quotes inside labels except wrapping quotes
+
+- Keep labels SHORT and SIMPLE (2–4 words max)
+
+STRUCTURE:
+- Include these nodes:
+  idea, target_audience, value_proposition,
+  revenue_streams, key_activities,
+  channels, cost_structure, competitive_advantage
+
+- Use subgraphs EXACTLY like this format:
+
+  subgraph market
+    target_audience["Target Audience"]
+    channels["Channels"]
+  end
+
+  subgraph product
+    value_proposition["Value Proposition"]
+    competitive_advantage["Competitive Advantage"]
+  end
+
+  subgraph revenue
+    revenue_streams["Revenue Streams"]
+    cost_structure["Cost Structure"]
+  end
+
+  subgraph operations
+    key_activities["Key Activities"]
+  end
+
+FLOW:
+- idea MUST connect to value_proposition
+- value_proposition MUST connect to target_audience
+- target_audience MUST connect to revenue_streams
+- revenue_streams MUST connect to cost_structure
+- idea MUST connect to key_activities
+- channels MUST connect to target_audience
+- competitive_advantage MUST connect to value_proposition
+
+FINAL CHECK BEFORE OUTPUT:
+- Ensure NO syntax errors
+- Ensure ALL nodes are connected
+- Ensure code renders correctly in Mermaid
+
+If unsure, return an empty string.
 """
 
 

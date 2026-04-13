@@ -663,7 +663,7 @@ function brutalFinalHeadline(idea, analysis) {
   if (score >= 0.75 && (verdict.includes('promising') || verdict.includes('strong') || verdict.includes('good'))) {
     return `Strong signal, brutal reality: "${label}" still dies without distribution.`;
   }
-  return `Brutal verdict: "${label}" wins only if you out-execute everyone.`;
+  return `Brutal verdict: "${label}...." wins only if you out-execute everyone.`;
 }
 
 function recalcSimulation() {
