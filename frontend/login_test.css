@@ -1,0 +1,728 @@
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-panel: #111111;
+      --text-primary: #f5f5f0;
+      --border: #2a2a2a;
+      --accent: #3b82f6;
+      --text-muted: rgba(245, 245, 240, 0.4);
+      --text-dim: rgba(245, 245, 240, 0.15);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ---- Layout ---- */
+    .login-container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 56px;
+      position: relative;
+    }
+
+    .panel--brand {
+      background: var(--bg-dark);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* Dot grid background */
+    .panel--brand::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(245, 245, 240, 0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient glow behind card */
+    .panel--brand::after {
+      content: '';
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 30%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .panel--form {
+      background: var(--bg-panel);
+      justify-content: center;
+      align-items: center;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Decorative corner brackets on form panel */
+    .panel--form::before,
+    .panel--form::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: #1a1a1a;
+      border-style: solid;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .panel--form::before {
+      top: 32px;
+      right: 32px;
+      border-width: 1px 1px 0 0;
+    }
+
+    .panel--form::after {
+      bottom: 32px;
+      left: 32px;
+      border-width: 0 0 1px 1px;
+    }
+
+    /* Noise texture overlay */
+    .login-container::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 128px 128px;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ---- Brand Panel ---- */
+    .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      animation: fadeIn 0.4s ease forwards 0.1s;
+    }
+
+    .wordmark__logo {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .wordmark__text {
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+
+    .scorecard-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      animation: settleUp12 0.6s var(--ease-out) forwards 0.1s;
+    }
+
+    /* ---- Card Stack / Carousel ---- */
+    .card-stack {
+      position: relative;
+      max-width: 340px;
+      width: 100%;
+      height: 430px;
+    }
+
+    .report-card {
+      border: 1px solid #1e1e1e;
+      padding: 28px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-dark);
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform, opacity;
+    }
+
+    /* Accent line at top of card */
+    .report-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 28px;
+      right: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+    }
+
+    /* Card layer positions — front to back */
+    .report-card[data-pos="0"] {
+      z-index: 3;
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .report-card[data-pos="1"] {
+      z-index: 2;
+      transform: translateY(14px) scale(0.96);
+      opacity: 0.45;
+    }
+
+    .report-card[data-pos="2"] {
+      z-index: 1;
+      transform: translateY(28px) scale(0.92);
+      opacity: 0.2;
+    }
+
+    .report-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .report-card__label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    .report-card__status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #333;
+    }
+
+    .report-card__status-dot {
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    /* Score area with arc */
+    .report-card__score-area {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 6px;
+    }
+
+    .score-arc {
+      flex-shrink: 0;
+    }
+
+    .score-arc__bg {
+      fill: none;
+      stroke: #1a1a1a;
+      stroke-width: 3;
+    }
+
+    .score-arc__fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: butt;
+      stroke-dasharray: 207;
+      transition: stroke-dashoffset 0.8s var(--ease-out);
+    }
+
+    .report-card__score {
+      font-size: 72px;
+      font-weight: 200;
+      line-height: 1;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+    }
+
+    .report-card__score .accent {
+      color: var(--accent);
+    }
+
+    .report-card__context {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .report-card__hr {
+      border: none;
+      border-top: 1px solid #1e1e1e;
+      margin: 0 0 20px;
+    }
+
+    /* Metric bars */
+    .report-card__metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .metric__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric__name {
+      font-size: 10px;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .metric__value {
+      font-size: 10px;
+      color: #555;
+    }
+
+    .metric__bar {
+      height: 3px;
+      background: #1a1a1a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric__fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #333, #444);
+      transition: width 0.8s var(--ease-out);
+      width: 0%;
+    }
+
+    .metric__fill--accent {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.5));
+    }
+
+    /* Ghost text lines */
+    .report-card__ghost-lines {
+      margin-bottom: 16px;
+    }
+
+    .report-card__ghost-line {
+      height: 6px;
+      background: #141414;
+      margin-bottom: 6px;
+    }
+
+    .report-card__ghost-line:nth-child(1) { width: 100%; }
+    .report-card__ghost-line:nth-child(2) { width: 65%; }
+    .report-card__ghost-line:nth-child(3) { width: 80%; }
+
+    /* Tags row */
+    .report-card__tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .report-card__tag {
+      display: inline-block;
+      font-size: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 3px 8px;
+    }
+
+    .report-card__tag--accent {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      color: var(--accent);
+    }
+
+    .report-card__tag--neutral {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid #1e1e1e;
+      color: #444;
+    }
+
+    .report-card__tag--red {
+      background: rgba(255, 80, 80, 0.06);
+      border: 1px solid rgba(255, 80, 80, 0.2);
+      color: #e85050;
+    }
+
+    .tagline {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      animation: fadeIn 0.4s ease forwards 0.5s;
+    }
+
+    /* ---- Form Panel ---- */
+    .form-wrapper {
+      width: 100%;
+      max-width: 400px;
+      opacity: 0;
+      animation: settleUp8 0.5s var(--ease-out) forwards 0.2s;
+    }
+
+    .form-heading {
+      font-size: 32px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .form-heading .accent-dot {
+      color: var(--accent);
+    }
+
+    .form-subtext {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      line-height: 1.5;
+    }
+
+    .form-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeIn 0.4s ease forwards 0.25s;
+    }
+
+    .form-divider__line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #1e1e1e, transparent);
+    }
+
+    .form-divider__line:last-child {
+      background: linear-gradient(90deg, transparent, #1e1e1e);
+    }
+
+    .form-divider__icon {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .form-divider__icon svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0.3;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: settleUp6 0.45s var(--ease-out) forwards;
+    }
+
+    .form-group:nth-child(1) {
+      animation-delay: 0.3s;
+    }
+
+    .form-group:nth-child(2) {
+      animation-delay: 0.38s;
+    }
+
+    .btn-signin {
+      opacity: 0;
+      animation: settleUp6 0.45s var(--ease-out) forwards 0.46s;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s ease, border-left-width 0.2s ease;
+    }
+
+    .form-input::placeholder {
+      color: #888;
+      font-weight: 300;
+    }
+
+    .form-input:focus {
+      border-color: var(--text-primary);
+      border-left: 2px solid var(--accent);
+    }
+
+    .btn-signin {
+      width: 100%;
+      padding: 15px;
+      margin-top: 16px;
+      background: var(--text-primary);
+      color: var(--bg-dark);
+      border: none;
+      border-radius: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s ease, letter-spacing 0.3s ease;
+    }
+
+    .btn-signin:hover {
+      background: var(--accent);
+      letter-spacing: 0.14em;
+    }
+
+    /* SSO button */
+    .btn-sso {
+      width: 100%;
+      padding: 13px;
+      margin-top: 10px;
+      background: transparent;
+      color: #555;
+      border: 1px solid #1e1e1e;
+      border-radius: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      opacity: 0;
+      animation: settleUp6 0.45s var(--ease-out) forwards 0.52s;
+    }
+
+    .btn-sso:hover {
+      border-color: #333;
+      color: var(--text-primary);
+    }
+
+    .btn-sso svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+      opacity: 0;
+      animation: fadeIn 0.4s ease forwards 0.5s;
+    }
+
+    .or-divider__line {
+      flex: 1;
+      height: 1px;
+      background: #1a1a1a;
+    }
+
+    .or-divider__text {
+      font-size: 11px;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .signup-link {
+      display: block;
+      text-align: center;
+      margin-top: 28px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      opacity: 0;
+      animation: settleUp6 0.45s var(--ease-out) forwards 0.58s;
+    }
+
+    .signup-link:hover {
+      color: var(--accent);
+    }
+
+    .signup-link .arrow {
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .signup-link:hover .arrow {
+      transform: translateX(4px);
+    }
+
+    /* Trust badges */
+    .trust-badges {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 36px;
+      opacity: 0;
+      animation: fadeIn 0.4s ease forwards 0.65s;
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .trust-badge__dot {
+      width: 4px;
+      height: 4px;
+      background: #252525;
+      border-radius: 50%;
+    }
+
+    .privacy-note {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-dim);
+      text-align: center;
+      white-space: nowrap;
+      font-family: 'IBM Plex Mono', monospace;
+      opacity: 0;
+      animation: fadeIn 0.4s ease forwards 0.6s;
+    }
+
+    /* ---- Animations ---- */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes settleUp12 {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes settleUp8 {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes settleUp6 {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 860px) {
+      .login-container {
+        flex-direction: column;
+      }
+
+      .panel--brand {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 32px 32px;
+        flex: 0 0 auto;
+        min-height: 360px;
+      }
+
+      .panel--form {
+        flex: 1;
+        padding: 40px 32px 80px;
+      }
+
+      .report-card__score {
+        font-size: 48px;
+      }
+
+      .report-card {
+        padding: 20px;
+      }
+
+      .card-stack {
+        height: 350px;
+      }
+
+      .score-arc {
+        display: none;
+      }
+
+      .privacy-note {
+        bottom: 24px;
+      }
+    }

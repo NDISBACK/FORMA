@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sign in to Forma — AI-powered market research tool. Access your reports and validate ideas.">
+  <title>Forma — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="login_test.css">
+  
+</head>
+<body>
+  <main class="login-container" id="login-page">
+
+    <!-- Left: Brand Panel -->
+    <section class="panel panel--brand" aria-label="Branding">
+      <div class="wordmark">
+        <svg class="wordmark__logo" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="32" height="32" stroke="#f5f5f0" stroke-width="1.5" fill="none"/>
+          <line x1="4" y1="20" x2="36" y2="20" stroke="#2a2a2a" stroke-width="1"/>
+          <line x1="20" y1="4" x2="20" y2="36" stroke="#2a2a2a" stroke-width="1"/>
+          <rect x="12" y="12" width="16" height="16" fill="#3b82f6" opacity="0.15"/>
+          <rect x="12" y="12" width="16" height="16" stroke="#3b82f6" stroke-width="1" fill="none"/>
+          <line x1="12" y1="20" x2="28" y2="20" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
+        </svg>
+        <span class="wordmark__text">FORMA</span>
+      </div>
+
+      <div class="scorecard-wrapper">
+        <div class="card-stack" id="cardStack" aria-hidden="true">
+
+          <!-- Card 1 -->
+          <div class="report-card" data-pos="0" data-card="0">
+            <div class="report-card__header">
+              <div class="report-card__label">Forma Report</div>
+              <div class="report-card__status">
+                <span class="report-card__status-dot"></span>
+                Live
+              </div>
+            </div>
+            <div class="report-card__score-area">
+              <svg class="score-arc" width="72" height="72" viewBox="0 0 72 72">
+                <circle class="score-arc__bg" cx="36" cy="36" r="33" />
+                <circle class="score-arc__fill" cx="36" cy="36" r="33"
+                        transform="rotate(-90 36 36)"
+                        data-target="41.4" />
+              </svg>
+              <div>
+                <div class="report-card__score">8<span class="accent">/</span>10</div>
+              </div>
+            </div>
+            <div class="report-card__context">Food delivery · Srinagar</div>
+            <hr class="report-card__hr">
+            <div class="report-card__metrics">
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Market Size</span>
+                  <span class="metric__value">High</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill metric__fill--accent" data-width="82"></div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Competition</span>
+                  <span class="metric__value">Moderate</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill" data-width="55"></div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Timing</span>
+                  <span class="metric__value">Favorable</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill metric__fill--accent" data-width="74"></div>
+                </div>
+              </div>
+            </div>
+            <hr class="report-card__hr">
+            <div class="report-card__ghost-lines">
+              <div class="report-card__ghost-line"></div>
+              <div class="report-card__ghost-line"></div>
+              <div class="report-card__ghost-line"></div>
+            </div>
+            <div class="report-card__tags">
+              <span class="report-card__tag report-card__tag--accent">Promising</span>
+              <span class="report-card__tag report-card__tag--neutral">B2C</span>
+              <span class="report-card__tag report-card__tag--neutral">Tier 2</span>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="report-card" data-pos="1" data-card="1">
+            <div class="report-card__header">
+              <div class="report-card__label">Forma Report</div>
+              <div class="report-card__status">
+                <span class="report-card__status-dot"></span>
+                Live
+              </div>
+            </div>
+            <div class="report-card__score-area">
+              <svg class="score-arc" width="72" height="72" viewBox="0 0 72 72">
+                <circle class="score-arc__bg" cx="36" cy="36" r="33" />
+                <circle class="score-arc__fill" cx="36" cy="36" r="33"
+                        transform="rotate(-90 36 36)"
+                        data-target="82.8" />
+              </svg>
+              <div>
+                <div class="report-card__score">6<span class="accent">/</span>10</div>
+              </div>
+            </div>
+            <div class="report-card__context">EdTech platform · Bangalore</div>
+            <hr class="report-card__hr">
+            <div class="report-card__metrics">
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Market Size</span>
+                  <span class="metric__value">Large</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill metric__fill--accent" data-width="90"></div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Competition</span>
+                  <span class="metric__value">Saturated</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill" data-width="92"></div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Timing</span>
+                  <span class="metric__value">Late</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill" data-width="35"></div>
+                </div>
+              </div>
+            </div>
+            <hr class="report-card__hr">
+            <div class="report-card__ghost-lines">
+              <div class="report-card__ghost-line"></div>
+              <div class="report-card__ghost-line"></div>
+              <div class="report-card__ghost-line"></div>
+            </div>
+            <div class="report-card__tags">
+              <span class="report-card__tag report-card__tag--red">Risky</span>
+              <span class="report-card__tag report-card__tag--neutral">B2C</span>
+              <span class="report-card__tag report-card__tag--neutral">Tier 1</span>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="report-card" data-pos="2" data-card="2">
+            <div class="report-card__header">
+              <div class="report-card__label">Forma Report</div>
+              <div class="report-card__status">
+                <span class="report-card__status-dot"></span>
+                Live
+              </div>
+            </div>
+            <div class="report-card__score-area">
+              <svg class="score-arc" width="72" height="72" viewBox="0 0 72 72">
+                <circle class="score-arc__bg" cx="36" cy="36" r="33" />
+                <circle class="score-arc__fill" cx="36" cy="36" r="33"
+                        transform="rotate(-90 36 36)"
+                        data-target="20.7" />
+              </svg>
+              <div>
+                <div class="report-card__score">9<span class="accent">/</span>10</div>
+              </div>
+            </div>
+            <div class="report-card__context">Sustainable fashion · Mumbai</div>
+            <hr class="report-card__hr">
+            <div class="report-card__metrics">
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Market Size</span>
+                  <span class="metric__value">Growing</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill metric__fill--accent" data-width="76"></div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Competition</span>
+                  <span class="metric__value">Low</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill" data-width="28"></div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric__header">
+                  <span class="metric__name">Timing</span>
+                  <span class="metric__value">Perfect</span>
+                </div>
+                <div class="metric__bar">
+                  <div class="metric__fill metric__fill--accent" data-width="95"></div>
+                </div>
+              </div>
+            </div>
+            <hr class="report-card__hr">
+            <div class="report-card__ghost-lines">
+              <div class="report-card__ghost-line"></div>
+              <div class="report-card__ghost-line"></div>
+              <div class="report-card__ghost-line"></div>
+            </div>
+            <div class="report-card__tags">
+              <span class="report-card__tag report-card__tag--accent">Strong Signal</span>
+              <span class="report-card__tag report-card__tag--neutral">D2C</span>
+              <span class="report-card__tag report-card__tag--neutral">Metro</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="tagline">Research before you build.</div>
+    </section>
+
+    <!-- Right: Form Panel -->
+    <section class="panel panel--form" aria-label="Sign in">
+      <div class="form-wrapper">
+        <h1 class="form-heading">Welcome back<span class="accent-dot">.</span></h1>
+        <p class="form-subtext">Sign in to continue validating ideas<br>and accessing your research reports.</p>
+
+        <div class="form-divider">
+          <div class="form-divider__line"></div>
+          <div class="form-divider__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" color="#444">
+              <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+            </svg>
+          </div>
+          <div class="form-divider__line"></div>
+        </div>
+
+        <form id="signin-form" autocomplete="on">
+          <div class="form-group">
+            <label class="form-label" for="email-input">Email</label>
+            <input
+              class="form-input"
+              type="email"
+              id="email-input"
+              name="email"
+              placeholder="you@company.com"
+              required
+              autocomplete="email"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password-input">Password</label>
+            <input
+              class="form-input"
+              type="password"
+              id="password-input"
+              name="password"
+              placeholder="••••••••••"
+              required
+              autocomplete="current-password"
+            >
+          </div>
+
+          <button type="submit" class="btn-signin" id="signin-button">Sign in</button>
+        </form>
+
+        <div class="or-divider">
+          <div class="or-divider__line"></div>
+          <span class="or-divider__text">or</span>
+          <div class="or-divider__line"></div>
+        </div>
+
+        <button type="button" class="btn-sso" id="google-signin">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#555"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#444"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#555"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#444"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <a href="#" class="signup-link" id="signup-link">
+          Don't have an account? Register to create new account <span class="arrow">→</span>
+        </a>
+
+        <div class="trust-badges">
+          <div class="trust-badge">
+            <span class="trust-badge__dot"></span>
+            Encrypted
+          </div>
+          <div class="trust-badge">
+            <span class="trust-badge__dot"></span>
+            SOC 2
+          </div>
+          <div class="trust-badge">
+            <span class="trust-badge__dot"></span>
+            GDPR
+          </div>
+        </div>
+      </div>
+
+      <p class="privacy-note">Your ideas are never stored or sold.</p>
+    </section>
+
+  </main>
+
+  <script src="login_test.js"></script>
+
+  
+</body>
+</html>
